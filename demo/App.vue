@@ -1,17 +1,30 @@
 <template>
     <div class="section">
         <h1>Timer</h1>
-        <p>timer is: {{ timer }}</p>
-        <p v-if="complete">Timer is complete!</p>
+        <div>
+            <input type="number" v-model.number="amount" />
+            <button v-if="timerAlive" @click.prevent="stop">Stop</button>
+            <button v-else @click.prevent="start">Start</button>
+        </div>
+        <p>Remains: {{ timer }}</p>
+        <p>
+            Timer is <strong>{{ timerAlive ? "Alive" : "Completed" }}!</strong>
+        </p>
     </div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from "vue";
 import { useTimer } from "../src/vUtils";
-const complete = ref(false);
-const { timer, onComplete } = useTimer(60000);
-onComplete(() => (complete.value = true));
+const amount = ref(60000);
+const { startTimer, stopTimer, timer, timerAlive } = useTimer();
+
+function start() {
+    startTimer(amount.value);
+}
+function stop() {
+    stopTimer();
+}
 </script>
 
 <style>

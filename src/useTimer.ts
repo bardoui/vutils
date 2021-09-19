@@ -1,12 +1,10 @@
 import { ref, computed } from "vue";
 /**
  * Generate live timer object from millisecond
- *
- * @param ms milliseconds
  */
-export function useTimer(ms: number) {
-    let cb: () => void;
-    const seconds = ref(+(ms / 1000).toFixed(0));
+export function useTimer() {
+    let interval: number;
+    const seconds = ref(0);
     const timer = computed(() => {
         const d = new Date(2020, 1, 1, 0, 0, 0, 0);
         d.setSeconds(seconds.value);
@@ -26,17 +24,21 @@ export function useTimer(ms: number) {
         }
         return trimStr(trimStr(res.join(":")));
     });
-    const interval = setInterval(() => {
-        seconds.value--;
-        if (seconds.value <= 0) {
-            clearInterval(interval);
-            cb && cb();
-        }
-    }, 1000);
+    const timerAlive = computed(() => seconds.value > 0);
 
-    function onComplete(callback: () => void) {
-        cb = callback;
+    function startTimer(ms: number) {
+        seconds.value = +(ms / 1000).toFixed(0);
+        interval = setInterval(() => {
+            seconds.value--;
+            if (seconds.value <= 0) {
+                stopTimer();
+            }
+        }, 1000);
+    }
+    function stopTimer() {
+        clearInterval(interval);
+        seconds.value = 0;
     }
 
-    return { timer, onComplete };
+    return { startTimer, stopTimer, timer, timerAlive };
 }

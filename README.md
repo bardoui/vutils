@@ -25,10 +25,15 @@ npm i @bardoui/vutils
 create a reactive timer from milliseconds.
 
 ```ts
-// Signature:
-useTimer(ms: number)
+import { ref } from "vue";
+import { useTimer } from "../src/vUtils";
+const amount = ref(60000);
+const { startTimer, stopTimer, timer, timerAlive } = useTimer();
 
-/// Example
-const { timer, onComplete } = useTimer(120000);
-onComplete(() => (console.log("timer completed!")));
+function start() {
+    startTimer(amount.value);
+}
+function stop() {
+    stopTimer();
+}
 ```
