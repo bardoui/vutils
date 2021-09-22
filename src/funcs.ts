@@ -6,7 +6,7 @@ import { Slot, Comment } from "vue";
  * @param slot slot
  * @returns boolean
  */
-export function isEmptySlot(slot: Slot): boolean {
+export function isEmptySlot(slot: Slot | undefined): boolean {
     return !(
         slot &&
         slot() &&
