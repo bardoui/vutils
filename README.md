@@ -18,22 +18,31 @@ this package published as `vUtils` module in umd.
 npm i @bardoui/vutils
 ```
 
-## Usage
+## Helpers
 
-### Timer
+### isEmptySlot
+
+check if slot not passed or empty.
+
+```ts
+import { isEmptySlot } from "@bardoui/vutils";
+isEmptySlot($slots.header);
+```
+
+## Timer
 
 create a reactive timer from milliseconds.
 
 ```ts
 import { ref } from "vue";
-import { useTimer } from "../src/vUtils";
+import { useTimer } from "@bardoui/vutils";
 const amount = ref(60000);
 const { startTimer, stopTimer, timer, timerAlive } = useTimer();
 
 function start() {
-    startTimer(amount.value);
+  startTimer(amount.value);
 }
 function stop() {
-    stopTimer();
+  stopTimer();
 }
 ```
