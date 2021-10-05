@@ -1,30 +1,11 @@
 <template>
-    <div class="section">
-        <h1>Timer</h1>
-        <div>
-            <input type="number" v-model.number="amount" />
-            <button v-if="timerAlive" @click.prevent="stop">Stop</button>
-            <button v-else @click.prevent="start">Start</button>
-        </div>
-        <p>Remains: {{ timer }}</p>
-        <p>
-            Timer is <strong>{{ timerAlive ? "Alive" : "Completed" }}!</strong>
-        </p>
-    </div>
+    <TimerAndShortcut />
+    <Lister />
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
-import { useTimer } from "../src/vUtils";
-const amount = ref(60000);
-const { startTimer, stopTimer, timer, timerAlive } = useTimer();
-
-function start() {
-    startTimer(amount.value);
-}
-function stop() {
-    stopTimer();
-}
+import TimerAndShortcut from "./TimerAndShortcut.vue";
+import Lister from "./Lister.vue";
 </script>
 
 <style>
@@ -35,8 +16,7 @@ body {
     height: 100%;
     margin: 0;
     padding: 2rem;
-    font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS",
-        sans-serif;
+    font-family: Calibri;
     font-size: 13px;
     color: #03071e;
     -webkit-font-smoothing: antialiased;
@@ -49,15 +29,17 @@ body {
     box-sizing: border-box;
 }
 
-.section {
+section {
     padding: 1rem;
 }
 
-h1 {
-    font-size: 2rem;
-    font-weight: normal;
+h1,
+h3 {
     margin: 0;
-    color: #42b883;
+    margin-bottom: 1rem;
+    font-weight: 100;
+    font-size: 2rem !important;
+    color: #a4133c;
 }
 
 input[type="text"] {
@@ -70,27 +52,18 @@ input[type="text"] {
     font: inherit;
 }
 
+pre {
+    padding: 1rem;
+    background: #e9ecef;
+}
+
 input[type="text"]:focus {
     outline: none;
-    border-color: #42b883;
+    border-color: #a4133c;
 }
 
-.desc {
-    display: block;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0.5rem 0;
-    color: #6c757d;
-}
-
-.wrapper {
-    background: #e9ecef;
-    border-radius: 3px;
-    border: 1px solid #e9ecef;
-    padding: 1rem;
-}
-
-.wrapper.has-focus {
-    border-color: #dc2f02;
+*:not(:last-child):not(div):not(pre) {
+    margin-right: 5px;
+    font: inherit;
 }
 </style>
