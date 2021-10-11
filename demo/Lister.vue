@@ -2,27 +2,30 @@
     <section>
         <h1>Lister</h1>
         <div>
-            <button @click="parseFromHash">Parse</button>
+            <button @click="parseFromHash">Parse from hash</button>
             <button @click="apply">Apply</button>
             <button @click="page = page + 1">Add Page</button>
             <button @click="limit = limit + 1">Add Limit</button>
             <button @click="search = 'search me'">Set Search</button>
-            <button @click="setFilter('name', 'John Doe')">
+            <button @click="username = 'John Doe'">
                 Set User Name
             </button>
-            <button @click="setFilter('name', null)">Clear User Name</button>
-            <button @click="toggleFilter('type', 'admin')">
-                Toggle admin type
+            <button @click="username = null">Clear User Name</button>
+            <button @click="toggleArray('groups', 'admin')">
+                Admin users
             </button>
-            <button @click="toggleFilter('type', 'operator')">
-                Toggle operator type
+            <button @click="toggleArray('groups', 'operator')">
+                Operator users
+            </button>
+            <button @click="clearFilters">
+                Clear filters
             </button>
         </div>
         <pre>{{ result }}</pre>
         <p>{{ hash }}</p>
-        <p>Current types: {{ types }}</p>
-        <p>User name is: {{ username }}</p>
-        <p>types contains admin: {{ hasAdminFilter }}</p>
+        <p>Username: {{ username }}</p>
+        <p>Groups: {{ groups }}</p>
+        <p>Contains admin users: {{ hasAdmin }}</p>
     </section>
 </template>
 
@@ -35,24 +38,27 @@ const {
     page,
     limit,
     apply,
-    setFilter,
-    toggleFilter,
-    query,
+    toggleArray,
     hash,
     search,
     parseHash,
-    filterValue,
-    filterContains
-} = useLister({ triggers: ["page"] });
+    filter,
+    value,
+    exists,
+    onApply,
+    clearFilters
+} = useLister({ triggers: "all" });
 
-const username = filterValue<string>("name");
-const types = filterValue<string>("type");
-const hasAdminFilter = filterContains("type", "admin");
-
+const username = filter<string>("name");
+const groups = value<string[]>("groups");
+const hasAdmin = exists("groups", "admin");
 function parseFromHash() {
     parseHash(
         "eyJwYWdlIjoxLCJsaW1pdCI6MjUsInNvcnQiOiJfaWQiLCJvcmRlciI6ImFzYyIsInNlYXJjaCI6IiIsImZpbHRlcnMiOnt9fQ=="
     );
 }
-watchEffect(() => (result.value = JSON.stringify(query.value, null, 4)));
+onApply((q, h) => {
+    result.value = JSON.stringify(q, null, 4);
+    console.log(h);
+});
 </script>

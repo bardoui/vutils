@@ -1,232 +1,251 @@
 import { ref, computed, watch } from "vue";
-
-type Trigger = "page" | "limit" | "sort" | "order" | "search" | "filters";
-
-interface ListerOption {
-    triggers?: Trigger[] | "all";
-    page?: number;
-    limit?: number;
-    validLimits?: number[];
-    sort?: string;
-    validSorts?: string[];
-    order?: "asc" | "desc";
-    search?: string;
-    filters?: Record<string, any>;
-}
-
 /**
  * manage list filters
- * @todo fix not repeating route change
  */
 export function useLister(opt: ListerOption) {
-    // init
-    const option = useOptions(opt);
+    const query = ref<Record<string, unknown>>({});
+    let locked = false; // lock auto apply
+    const Opt = parseOptions(opt); // default options
 
-    // stats
-    let autoApply = true;
-    const _query = ref<Record<string, any>>({});
-    const query = computed(() => _query.value);
-    const hash = computed(() => encode(JSON.stringify(_query.value)));
-    const isEmpty = computed(() => records.value.length == 0);
-    const records = computed(() =>
-        Array.isArray(_query.value["data"]) ? _query.value["data"] : []
-    );
-    const total = computed(() =>
-        Number.isInteger(_query.value["total"]) ? _query.value["total"] : 0
-    );
-    const from = computed(() =>
-        Number.isInteger(_query.value["from"]) ? _query.value["from"] : 0
-    );
-    const to = computed(() =>
-        Number.isInteger(_query.value["to"]) ? _query.value["to"] : 0
-    );
-    const pages = computed(() =>
-        Number.isInteger(_query.value["pages"]) ? _query.value["pages"] : 0
-    );
+    // utility functions
+    const _ = {
+        encode: (str: string) => window.btoa(unescape(encodeURIComponent(str))),
+        decode: (str: string) => decodeURIComponent(escape(window.atob(str))),
+        isObject: (v: any) => v && typeof v == "object",
+        isVal: (v: any) => v != null && v != undefined,
+        clone: (v: any) => JSON.parse(JSON.stringify(v)),
+        arrayOf: (v: any) => (Array.isArray(v) ? v : []),
+        numberOf: (v: any) => (Number.isInteger(v) ? v : 0),
+        query: (k: string) => query.value[k],
+        autoApply: (k: Trigger, v: unknown) =>
+            !locked && Opt.isAuto(k) && (query.value[k] = v)
+    };
 
-    // composition apis
-    const { encode, decode, isObject, isVal } = useUtils();
-    const { page } = usePage(option.page);
-    const { limit, limits } = useLimit(option.limit, option.limits);
-    const { sort, sorts } = useSort(option.sort, option.sorts);
-    const { order } = useOrder(option.order);
-    const { search, clearSearch } = useSearch(option.search);
-    const {
-        filters,
-        clearFilters,
-        removeFilter,
-        setFilter,
-        toggleFilter,
-        filterValue,
-        filterContains
-    } = useFilter(option.filters);
-
-    // methods
-    function resetPage() {
-        page.value = Number.isInteger(_query.value["page"])
-            ? _query.value["page"]
-            : option.page;
-    }
-    function resetLimit() {
-        limit.value = Number.isInteger(_query.value["limit"])
-            ? _query.value["limit"]
-            : option.limit;
-    }
-    function resetSort() {
-        sort.value = isVal(_query.value["sort"])
-            ? _query.value["sort"]
-            : option.sort;
-    }
-    function resetOrder() {
-        order.value = isVal(_query.value["order"])
-            ? _query.value["order"]
-            : option.order;
-    }
-    function resetSearch() {
-        search.value = isVal(_query.value["search"])
-            ? _query.value["search"]
-            : option.search;
-    }
-    function resetFilters() {
-        filters.value = Object.assign(
-            {},
-            isVal(_query.value["filters"])
-                ? _query.value["filters"]
-                : option.filters
-        );
-    }
-    function reset() {
-        autoApply = false;
-        resetPage();
-        resetLimit();
-        resetSort();
-        resetOrder();
-        resetSearch();
-        resetFilters();
-        autoApply = true;
-    }
-    function apply() {
-        _query.value["page"] = page.value;
-        _query.value["limit"] = limit.value;
-        _query.value["sort"] = sort.value;
-        _query.value["order"] = order.value;
-        _query.value["search"] = search.value;
-        _query.value["filters"] = Object.assign({}, filters.value);
-    }
-    function parseJson(data: any) {
-        autoApply = false;
-        try {
-            if (isObject(data)) {
-                _query.value = data;
-                Number.isInteger(data.page)
-                    ? (page.value = data.page)
-                    : (_query.value["page"] = page.value);
-                Number.isInteger(data.limit)
-                    ? (limit.value = data.limit)
-                    : (_query.value["limit"] = limit.value);
-                data.sort
-                    ? (sort.value = data.sort)
-                    : (_query.value["sort"] = sort.value);
-                ["asc", "desc"].includes(data.order)
-                    ? (order.value = data.order)
-                    : (_query.value["order"] = order.value);
-                data.search != undefined
-                    ? (search.value = data.search)
-                    : (_query.value["search"] = search.value);
-                isObject(data.filters)
-                    ? (filters.value = Object.assign({}, data.filters))
-                    : (_query.value["filters"] = Object.assign(
-                          {},
-                          filters.value
-                      ));
+    // Page
+    const page = (() => {
+        const _v = ref(Opt.page);
+        const page = computed({
+            get: () => _v.value,
+            set: (v: number) => {
+                v && v > 0 && (_v.value = v);
+                _.autoApply("page", _v.value);
             }
-        } catch {
-            //
-        }
-        autoApply = true;
-    }
-    function parseHash(data: string) {
-        try {
-            const json = decode(data);
-            const raw = JSON.parse(json);
-            parseJson(raw);
-        } catch {
-            //
-        }
-    }
+        });
+        const reset = () =>
+            (page.value = _.numberOf(_.query("page")) || Opt.page);
+        return { page, resetPage: reset };
+    })();
 
-    // hooks
-    parseJson({});
+    // Limit
+    const limit = (() => {
+        const _v = ref(Opt.limit);
+        const limits = ref(Opt.limits);
+        const limit = computed({
+            get: () => _v.value,
+            set: (v: number) => {
+                const ls = limits.value || [];
+                v &&
+                    v > 0 &&
+                    (ls.length == 0 || ls.includes(v)) &&
+                    (_v.value = v);
+                _.autoApply("limit", _v.value);
+            }
+        });
+        const reset = () =>
+            (limit.value = _.numberOf(_.query("limit")) || Opt.limit);
+        return { limits, limit, resetLimit: reset };
+    })();
 
-    // watchers
-    const trigger = (key: Trigger, value: any) => {
-        autoApply && option.mustTriggered(key) && (_query.value[key] = value);
-    };
-    watch(page, v => trigger("page", v));
-    watch(limit, v => trigger("limit", v));
-    watch(sort, v => trigger("sort", v));
-    watch(order, v => trigger("order", v));
-    watch(search, v => trigger("search", v));
-    watch(filters, v => trigger("filters", v), { deep: true });
+    // Sort
+    const sort = (() => {
+        const _v = ref(Opt.sort);
+        const sorts = ref(Opt.sorts);
+        const sort = computed({
+            get: () => _v.value,
+            set: (v: string) => {
+                const ls = sorts.value || [];
+                v && (ls.length == 0 || ls.includes(v)) && (_v.value = v);
+                _.autoApply("sort", _v.value);
+            }
+        });
+        const reset = () =>
+            (sort.value =
+                (_.isVal(_.query("sort")) ? _.query("sort") + "" : "") ||
+                Opt.sort);
+        return { sorts, sort, resetSort: reset };
+    })();
 
-    // return
+    // Order
+    const order = (() => {
+        const _v = ref(Opt.order);
+        const order = computed({
+            get: () => _v.value,
+            set: (v: OrderType) => {
+                ["asc", "desc"].includes(v) && (_v.value = v as OrderType);
+                _.autoApply("order", _v.value);
+            }
+        });
+        const reset = () =>
+            (order.value = ["asc", "desc"].includes(`${_.query("order")}`)
+                ? (`${_.query("order")}` as OrderType)
+                : Opt.order);
+        return { order, resetOrder: reset };
+    })();
+
+    // Search
+    const search = (() => {
+        const _v = ref(Opt.sort);
+        const search = computed({
+            get: () => _v.value,
+            set: (v: string) => {
+                _.isVal(v) && (_v.value = v);
+                _.autoApply("search", _v.value);
+            }
+        });
+        const reset = () =>
+            (search.value =
+                (_.isVal(_.query("search")) ? `${_.query("search")}` : "") ||
+                Opt.search);
+        return { search, resetSearch: reset };
+    })();
+
+    // Filter
+    const { filters, ...filter } = (() => {
+        const _v = ref(Opt.filters);
+        const filters = computed({
+            get: () => _v.value,
+            set: v => {
+                console.log("came");
+
+                _v.value = v;
+                _.autoApply("filters", _.clone(_v.value));
+            }
+        });
+        const remove = (k: string) => {
+            k in _v.value && delete _v.value[k];
+            _.autoApply("filters", _.clone(_v.value));
+        };
+        const toggle = (k: string, v: any) => {
+            v ? (_v.value[k] = v) : remove(k);
+            _.autoApply("filters", _.clone(_v.value));
+        };
+        const toggleArray = (k: string, v: any) => {
+            if (v) {
+                const currentV = _.arrayOf(_v.value[k]);
+                const index = currentV.indexOf(v);
+                index === -1 ? currentV.push(v) : currentV.splice(index, 1);
+                currentV.length ? (_v.value[k] = currentV) : remove(k);
+            }
+            _.autoApply("filters", _.clone(_v.value));
+        };
+        const filter = <T = any>(k: string) =>
+            computed<T>({
+                get: () => _v.value[k],
+                set: (v: T) => toggle(k, v)
+            });
+        const value = <T = any>(k: string) => computed<T>(() => _v.value[k]);
+        const exists = (k: string, v: any) =>
+            computed(() => _.arrayOf(_v.value[k]).includes(v));
+        const clear = () => (filters.value = {});
+        const reset = () =>
+            (filters.value = _.isObject(query.value)
+                ? _.clone(_v.value)
+                : _.clone(Opt.filters));
+        return {
+            filters,
+            remove,
+            toggle,
+            toggleArray,
+            filter,
+            value,
+            exists,
+            clearFilters: clear,
+            resetFilters: reset
+        };
+    })();
+
+    const lister = (() => {
+        type callback = (q: Record<string, unknown>, hash: string) => void;
+        let cb: callback;
+        watch(
+            query,
+            q => {
+                cb && cb(q, _.encode(JSON.stringify(q)));
+            },
+            { deep: true }
+        );
+        const apply = () => {
+            query.value["page"] = page.page.value;
+            query.value["limit"] = limit.limit.value;
+            query.value["sort"] = sort.sort.value;
+            query.value["order"] = order.order.value;
+            query.value["search"] = search.search.value;
+            query.value["filters"] = _.clone(filters.value);
+        };
+        const onApply = (callback: callback) => (cb = callback);
+        const reset = () => {
+            locked = true;
+            page.resetPage();
+            limit.resetLimit();
+            sort.resetSort();
+            order.resetOrder();
+            search.resetSearch();
+            locked = false;
+        };
+        const parseJson = (raw: any) => {
+            locked = true;
+            try {
+                if (_.isObject(raw)) {
+                    query.value = raw;
+                    page.page.value = raw.page;
+                    limit.limit.value = raw.limit;
+                    sort.sort.value = raw.sort;
+                    order.order.value = raw.order;
+                    search.search.value = raw.search;
+                    _.isObject(raw.filters) &&
+                        (filters.value = _.clone(raw.filters));
+                    apply();
+                }
+            } catch {
+                //
+            }
+            locked = false;
+        };
+        const parseHash = (hashed: string) => {
+            try {
+                const json = _.decode(hashed);
+                const raw = JSON.parse(json);
+                parseJson(raw);
+            } catch {
+                //
+            }
+        };
+        const coms = {
+            query: computed(() => query.value),
+            hash: computed(() => _.encode(JSON.stringify(query.value))),
+            records: computed(() => _.arrayOf(_.query("data"))),
+            isEmpty: computed(() => !!_.arrayOf(_.query("data")).length),
+            total: computed(() => _.numberOf(_.query("total"))),
+            from: computed(() => _.numberOf(_.query("from"))),
+            to: computed(() => _.numberOf(_.query("to"))),
+            pages: computed(() => _.numberOf(_.query("pages")))
+        };
+        return { reset, apply, onApply, parseJson, parseHash, ...coms };
+    })();
+
     return {
-        // readonly
-        query,
-        hash,
-        isEmpty,
-        records,
-        total,
-        from,
-        to,
-        pages,
-        // vars
-        page,
-        limit,
-        sort,
-        order,
-        search,
-        limits,
-        sorts,
-        resetPage,
-        resetLimit,
-        resetSort,
-        resetOrder,
-        resetSearch,
-        resetFilters,
-        reset,
-        apply,
-        parseJson,
-        parseHash,
-        clearSearch,
-        clearFilters,
-        removeFilter,
-        setFilter,
-        toggleFilter,
-        filterValue,
-        filterContains
+        ...page,
+        ...limit,
+        ...sort,
+        ...order,
+        ...search,
+        ...filter,
+        ...lister
     };
-}
-
-// utility functions
-function useUtils() {
-    function encode(str: string) {
-        return window.btoa(unescape(encodeURIComponent(str)));
-    }
-    function decode(str: string) {
-        return decodeURIComponent(escape(window.atob(str)));
-    }
-    function isObject(v: any) {
-        return v && typeof v == "object";
-    }
-    function isVal(v: any) {
-        return v != null && v != undefined;
-    }
-    return { encode, decode, isObject, isVal };
 }
 
 // validate and parse options
-function useOptions(opt: ListerOption) {
+function parseOptions(opt: ListerOption) {
     // triggers
     let triggers = ["page", "limit", "sort", "order"];
     if (opt.triggers == "all") {
@@ -234,7 +253,7 @@ function useOptions(opt: ListerOption) {
     } else if (opt.triggers) {
         triggers = opt.triggers;
     }
-    function mustTriggered(key: Trigger) {
+    function isAuto(key: Trigger) {
         return triggers.includes(key);
     }
     // defaults
@@ -243,11 +262,11 @@ function useOptions(opt: ListerOption) {
     const validLimits: number[] = opt.validLimits || [];
     const sort: string = opt.sort || "_id";
     const validSorts: string[] = opt.validSorts || [];
-    const order: "asc" | "desc" = opt.order || "asc";
+    const order: OrderType = opt.order || "asc";
     const search: string = opt.search || "";
     const filters: Record<string, any> = opt.filters || {};
     return {
-        mustTriggered,
+        isAuto,
         page,
         limit,
         sort,
@@ -259,100 +278,16 @@ function useOptions(opt: ListerOption) {
     };
 }
 
-// page stats and functions
-function usePage(def: number) {
-    const page = ref(def);
-    return { page };
-}
-
-// limit stats and functions
-function useLimit(def: number, defLimits: number[]) {
-    const limits = ref(defLimits);
-    const _limit = ref(def);
-    const limit = computed({
-        get: () => _limit.value,
-        set: (v: number) => {
-            (limits.value.length == 0 || limits.value.includes(v)) &&
-                (_limit.value = v);
-        }
-    });
-    return { limits, limit };
-}
-
-// sort stats and functions
-function useSort(def: string, defSorts: string[]) {
-    const sorts = ref(defSorts);
-    const _sort = ref(def);
-    const sort = computed({
-        get: () => _sort.value,
-        set: (v: string) => {
-            (sorts.value.length == 0 || sorts.value.includes(v)) &&
-                (_sort.value = v);
-        }
-    });
-    return { sorts, sort };
-}
-
-// order stats and functions
-function useOrder(def: "asc" | "desc") {
-    const _order = ref(def);
-    const order = computed({
-        get: () => _order.value,
-        set: (v: "asc" | "desc") => (_order.value = v)
-    });
-    return { order };
-}
-
-// search stats and functions
-function useSearch(def: string) {
-    const search = ref(def);
-    const clearSearch = () => (search.value = "");
-    return { search, clearSearch };
-}
-
-// filter stats and functions
-function useFilter(def: Record<string, any>) {
-    const filters = ref(def);
-    const clearFilters = () => (filters.value = {});
-
-    // remove filter
-    function removeFilter(key: string) {
-        key in filters.value && delete filters.value[key];
-    }
-    // set to null or undefined will remove filter
-    function setFilter(key: string, value: any) {
-        value ? (filters.value[key] = value) : removeFilter(key);
-    }
-    // push/remove item from arrayed filter
-    function toggleFilter(key: string, value: any) {
-        if (!value) return;
-        const vals = Array.isArray(filters.value[key])
-            ? (filters.value[key] as Array<any>)
-            : [];
-        const index = vals.indexOf(value);
-        index == -1 ? vals.push(value) : vals.splice(index, 1);
-        vals.length ? (filters.value[key] = vals) : removeFilter(key);
-    }
-
-    function filterValue<T = any>(k: string) {
-        return computed<T>(() => filters.value[k]);
-    }
-
-    function filterContains(k: string, value: any) {
-        return computed(
-            () =>
-                Array.isArray(filters.value[k]) &&
-                (filters.value[k] as Array<any>).includes(value)
-        );
-    }
-
-    return {
-        filters,
-        clearFilters,
-        removeFilter,
-        setFilter,
-        toggleFilter,
-        filterValue,
-        filterContains
-    };
+type OrderType = "asc" | "desc";
+type Trigger = "page" | "limit" | "sort" | "order" | "search" | "filters";
+interface ListerOption {
+    triggers?: Trigger[] | "all";
+    page?: number;
+    limit?: number;
+    validLimits?: number[];
+    sort?: string;
+    validSorts?: string[];
+    order?: OrderType;
+    search?: string;
+    filters?: Record<string, any>;
 }
