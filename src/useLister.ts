@@ -94,7 +94,7 @@ export function useLister(opt: ListerOption) {
 
     // Search
     const search = (() => {
-        const _v = ref(Opt.sort);
+        const _v = ref(Opt.search);
         const search = computed({
             get: () => _v.value,
             set: (v: string) => {
