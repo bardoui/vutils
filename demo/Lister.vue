@@ -3,7 +3,8 @@
         <h1>Lister</h1>
         <div>
             <button @click="parseFromHash">Parse from hash</button>
-            <button @click="apply">Apply</button>
+            <button @click="parseFromJson">Parse from json</button>
+            <button @click="apply()">Apply</button>
             <button @click="page = page + 1">Add Page</button>
             <button @click="limit = limit + 1">Add Limit</button>
             <button @click="search = 'search me'">Set Search</button>
@@ -30,7 +31,7 @@
 </template>
 
 <script lang="ts" setup>
-import { watchEffect, ref } from "vue";
+import { ref } from "vue";
 import { useLister } from "@/useLister";
 
 const result = ref("{}");
@@ -42,6 +43,7 @@ const {
     hash,
     search,
     parseHash,
+    parseJson,
     filter,
     value,
     exists,
@@ -56,6 +58,17 @@ function parseFromHash() {
     parseHash(
         "eyJwYWdlIjoxLCJsaW1pdCI6MjUsInNvcnQiOiJfaWQiLCJvcmRlciI6ImFzYyIsInNlYXJjaCI6IiIsImZpbHRlcnMiOnt9fQ=="
     );
+}
+function parseFromJson() {
+    parseJson({
+        page: 1,
+        limit: 25,
+        sort: "_id",
+        order: "asc",
+        search: "",
+        filters: {},
+        data: [{ _id: 1 }]
+    });
 }
 onApply((q, h) => {
     result.value = JSON.stringify(q, null, 4);

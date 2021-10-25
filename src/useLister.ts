@@ -147,22 +147,6 @@ export function useLister(opt: ListerOption) {
     })();
 
     const lister = (() => {
-        type callback = (q: Record<string, unknown>, hash: string) => void;
-        let cb: callback;
-        watch(
-            query,
-            (q, oQ) => {
-                const raw = _.withoutData(q);
-                const oRaw = _.withoutData(oQ);
-                if (
-                    _.encode(JSON.stringify(raw)) !==
-                    _.encode(JSON.stringify(oRaw))
-                ) {
-                    cb && cb(raw, _.encode(JSON.stringify(raw)));
-                }
-            },
-            { deep: true }
-        );
         const apply = (item: Trigger[] | "all" = "all") => {
             if (item === "all") {
                 item = ["page", "limit", "sort", "order", "search", "filters"];
@@ -178,7 +162,6 @@ export function useLister(opt: ListerOption) {
             item.includes("filters") &&
                 (query.value["filters"] = _.clone(filters.value));
         };
-        const onApply = (callback: callback) => (cb = callback);
         const reset = (item: Trigger[] | "all" = "all") => {
             if (item === "all") {
                 item = ["page", "limit", "sort", "order", "search", "filters"];
@@ -255,6 +238,19 @@ export function useLister(opt: ListerOption) {
             to: computed(() => _.numberOf(_.query("to"))),
             pages: computed(() => _.numberOf(_.query("pages")))
         };
+        // onApply callback
+        type callback = (q: Record<string, unknown>, hash: string) => void;
+        let cb: callback;
+        const onApply = (callback: callback) => (cb = callback);
+        watch(
+            coms.hash,
+            (n, o) => {
+                if (n !== o) {
+                    cb && cb(coms.query.value, n);
+                }
+            },
+            { deep: true }
+        );
         return { reset, apply, onApply, parseJson, parseHash, ...coms };
     })();
 
