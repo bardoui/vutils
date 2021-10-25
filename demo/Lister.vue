@@ -61,17 +61,13 @@ function parseFromHash() {
 }
 function parseFromJson() {
     parseJson({
-        page: 1,
-        limit: 25,
-        sort: "_id",
-        order: "asc",
-        search: "",
-        filters: {},
         data: [{ _id: 1 }]
     });
 }
 onApply((q, h) => {
     result.value = JSON.stringify(q, null, 4);
-    console.log(h);
+    parseFromJson();
+    console.log(q);
+    // console.log(h);
 });
 </script>

@@ -5,6 +5,7 @@ import { ref, computed, watch } from "vue";
 export function useLister(opt: ListerOption) {
     const query = ref<Record<string, unknown>>({});
     let locked = false; // lock auto apply
+    let respHash = ""; // keep response hash for prevent onApply after parsing response
     const Opt = parseOptions(opt); // default options
 
     // utility functions
@@ -147,6 +148,19 @@ export function useLister(opt: ListerOption) {
     })();
 
     const lister = (() => {
+        const _resolve = (raw: any) => {
+            if (_.isObject(raw)) {
+                query.value = raw;
+                page.page.value = raw.page;
+                limit.limit.value = raw.limit;
+                sort.sort.value = raw.sort;
+                order.order.value = raw.order;
+                search.search.value = raw.search;
+                _.isObject(raw.filters) &&
+                    (filters.value = _.clone(raw.filters));
+                apply();
+            }
+        };
         const apply = (item: Trigger[] | "all" = "all") => {
             if (item === "all") {
                 item = ["page", "limit", "sort", "order", "search", "filters"];
@@ -202,15 +216,8 @@ export function useLister(opt: ListerOption) {
             locked = true;
             try {
                 if (_.isObject(raw)) {
-                    query.value = raw;
-                    page.page.value = raw.page;
-                    limit.limit.value = raw.limit;
-                    sort.sort.value = raw.sort;
-                    order.order.value = raw.order;
-                    search.search.value = raw.search;
-                    _.isObject(raw.filters) &&
-                        (filters.value = _.clone(raw.filters));
-                    apply();
+                    respHash = _.encode(JSON.stringify(_.withoutData(raw)));
+                    _resolve(raw);
                 }
             } catch {
                 //
@@ -221,7 +228,7 @@ export function useLister(opt: ListerOption) {
             try {
                 const json = _.decode(hashed);
                 const raw = JSON.parse(json);
-                parseJson(raw);
+                _resolve(raw);
             } catch {
                 //
             }
@@ -245,7 +252,7 @@ export function useLister(opt: ListerOption) {
         watch(
             coms.hash,
             (n, o) => {
-                if (n !== o) {
+                if (n !== o && n != respHash) {
                     cb && cb(coms.query.value, n);
                 }
             },
