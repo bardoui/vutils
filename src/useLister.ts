@@ -174,13 +174,19 @@ export function useLister(opt: ListerOption) {
             },
             { deep: true }
         );
-        const apply = () => {
-            query.value["page"] = page.page.value;
-            query.value["limit"] = limit.limit.value;
-            query.value["sort"] = sort.sort.value;
-            query.value["order"] = order.order.value;
-            query.value["search"] = search.search.value;
-            query.value["filters"] = _.clone(filters.value);
+        const apply = (item: Trigger | "all" = "all") => {
+            ["page", "all"].includes(item) &&
+                (query.value["page"] = page.page.value);
+            ["limit", "all"].includes(item) &&
+                (query.value["limit"] = limit.limit.value);
+            ["sort", "all"].includes(item) &&
+                (query.value["sort"] = sort.sort.value);
+            ["order", "all"].includes(item) &&
+                (query.value["order"] = order.order.value);
+            ["search", "all"].includes(item) &&
+                (query.value["search"] = search.search.value);
+            ["filters", "all"].includes(item) &&
+                (query.value["filters"] = _.clone(filters.value));
         };
         const onApply = (callback: callback) => (cb = callback);
         const reset = () => {
@@ -224,7 +230,7 @@ export function useLister(opt: ListerOption) {
             query: computed(() => query.value),
             hash: computed(() => _.encode(JSON.stringify(query.value))),
             records: computed(() => _.arrayOf(_.query("data"))),
-            isEmpty: computed(() => !!_.arrayOf(_.query("data")).length),
+            isEmpty: computed(() => !_.arrayOf(_.query("data")).length),
             total: computed(() => _.numberOf(_.query("total"))),
             from: computed(() => _.numberOf(_.query("from"))),
             to: computed(() => _.numberOf(_.query("to"))),

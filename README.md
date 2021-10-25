@@ -114,11 +114,13 @@ All options are optional and lister use default value if option not passed or in
 
 **Note:** if field not listed in trigger list, you must apply field changes manually!
 
+**Note:** you can apply staged change using `apply()` method. Apply method apply all staged changes by default but you can specify which item must applied using trigger available value.
+
 #### Usage
 
 | Method/Attribute | Type                                             | Description                                           |
 | :--------------- | :----------------------------------------------- | :---------------------------------------------------- |
-| apply            | `() => void`                                     | apply all staged changes                              |
+| apply            | `(item: Trigger | "all") => void`                | apply staged changes                                  |
 | onApply          | `(query: Object, hash: string) => void`          | register a callback to call after apply               |
 | reset            | `() => void`                                     | discard all staged (un-applied) changes               |
 | parseJson        | `(data: any) => void`                            | parse json response                                   |

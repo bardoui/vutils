@@ -1,6 +1,6 @@
 {
     "name": "@bardoui/vutils",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "private": false,
     "description": "utility for vue 3",
     "license": "ISC",
