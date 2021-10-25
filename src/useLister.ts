@@ -31,9 +31,7 @@ export function useLister(opt: ListerOption) {
                 _.autoApply("page", _v.value);
             }
         });
-        const reset = () =>
-            (page.value = _.numberOf(_.query("page")) || Opt.page);
-        return { page, resetPage: reset };
+        return { page };
     })();
 
     // Limit
@@ -51,9 +49,7 @@ export function useLister(opt: ListerOption) {
                 _.autoApply("limit", _v.value);
             }
         });
-        const reset = () =>
-            (limit.value = _.numberOf(_.query("limit")) || Opt.limit);
-        return { limits, limit, resetLimit: reset };
+        return { limits, limit };
     })();
 
     // Sort
@@ -68,11 +64,7 @@ export function useLister(opt: ListerOption) {
                 _.autoApply("sort", _v.value);
             }
         });
-        const reset = () =>
-            (sort.value =
-                (_.isVal(_.query("sort")) ? _.query("sort") + "" : "") ||
-                Opt.sort);
-        return { sorts, sort, resetSort: reset };
+        return { sorts, sort };
     })();
 
     // Order
@@ -85,11 +77,7 @@ export function useLister(opt: ListerOption) {
                 _.autoApply("order", _v.value);
             }
         });
-        const reset = () =>
-            (order.value = ["asc", "desc"].includes(`${_.query("order")}`)
-                ? (`${_.query("order")}` as OrderType)
-                : Opt.order);
-        return { order, resetOrder: reset };
+        return { order };
     })();
 
     // Search
@@ -102,11 +90,7 @@ export function useLister(opt: ListerOption) {
                 _.autoApply("search", _v.value);
             }
         });
-        const reset = () =>
-            (search.value =
-                (_.isVal(_.query("search")) ? `${_.query("search")}` : "") ||
-                Opt.search);
-        return { search, resetSearch: reset };
+        return { search };
     })();
 
     // Filter
@@ -115,8 +99,6 @@ export function useLister(opt: ListerOption) {
         const filters = computed({
             get: () => _v.value,
             set: v => {
-                console.log("came");
-
                 _v.value = v;
                 _.autoApply("filters", _.clone(_v.value));
             }
@@ -147,10 +129,6 @@ export function useLister(opt: ListerOption) {
         const exists = (k: string, v: any) =>
             computed(() => _.arrayOf(_v.value[k]).includes(v));
         const clear = () => (filters.value = {});
-        const reset = () =>
-            (filters.value = _.isObject(query.value)
-                ? _.clone(_v.value)
-                : _.clone(Opt.filters));
         return {
             filters,
             remove,
@@ -159,8 +137,7 @@ export function useLister(opt: ListerOption) {
             filter,
             value,
             exists,
-            clearFilters: clear,
-            resetFilters: reset
+            clearFilters: clear
         };
     })();
 
@@ -174,28 +151,56 @@ export function useLister(opt: ListerOption) {
             },
             { deep: true }
         );
-        const apply = (item: Trigger | "all" = "all") => {
-            ["page", "all"].includes(item) &&
-                (query.value["page"] = page.page.value);
-            ["limit", "all"].includes(item) &&
+        const apply = (item: Trigger[] | "all" = "all") => {
+            if (item === "all") {
+                item = ["page", "limit", "sort", "order", "search", "filters"];
+            }
+            item.includes("page") && (query.value["page"] = page.page.value);
+            item.includes("limit") &&
                 (query.value["limit"] = limit.limit.value);
-            ["sort", "all"].includes(item) &&
-                (query.value["sort"] = sort.sort.value);
-            ["order", "all"].includes(item) &&
+            item.includes("sort") && (query.value["sort"] = sort.sort.value);
+            item.includes("order") &&
                 (query.value["order"] = order.order.value);
-            ["search", "all"].includes(item) &&
+            item.includes("search") &&
                 (query.value["search"] = search.search.value);
-            ["filters", "all"].includes(item) &&
+            item.includes("filters") &&
                 (query.value["filters"] = _.clone(filters.value));
         };
         const onApply = (callback: callback) => (cb = callback);
-        const reset = () => {
+        const reset = (item: Trigger[] | "all" = "all") => {
+            if (item === "all") {
+                item = ["page", "limit", "sort", "order", "search", "filters"];
+            }
             locked = true;
-            page.resetPage();
-            limit.resetLimit();
-            sort.resetSort();
-            order.resetOrder();
-            search.resetSearch();
+            if (item.includes("page")) {
+                page.page.value = _.numberOf(_.query("page")) || Opt.page;
+            }
+            if (item.includes("limit")) {
+                limit.limit.value = _.numberOf(_.query("limit")) || Opt.limit;
+            }
+            if (item.includes("sort")) {
+                sort.sort.value =
+                    (_.isVal(_.query("sort")) ? _.query("sort") + "" : "") ||
+                    Opt.sort;
+            }
+            if (item.includes("order")) {
+                order.order.value = ["asc", "desc"].includes(
+                    `${_.query("order")}`
+                )
+                    ? (`${_.query("order")}` as OrderType)
+                    : Opt.order;
+            }
+            if (item.includes("search")) {
+                search.search.value =
+                    (_.isVal(_.query("search"))
+                        ? `${_.query("search")}`
+                        : "") || Opt.search;
+            }
+            if (item.includes("filters")) {
+                filters.value = _.isObject(_.query("filters"))
+                    ? _.clone(_.query("search"))
+                    : _.clone(Opt.filters);
+            }
             locked = false;
         };
         const parseJson = (raw: any) => {

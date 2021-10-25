@@ -114,15 +114,17 @@ All options are optional and lister use default value if option not passed or in
 
 **Note:** if field not listed in trigger list, you must apply field changes manually!
 
-**Note:** you can apply staged change using `apply()` method. Apply method apply all staged changes by default but you can specify which item must applied using trigger available value.
+**Note:** you can apply staged change using `apply()` method. Apply method apply all staged changes by default but you can list items must applied (e.g. `apply(["page", "order"])`).
+
+**Note:** `reset()` method follow `apply()` pattern.
 
 #### Usage
 
 | Method/Attribute | Type                                             | Description                                           |
 | :--------------- | :----------------------------------------------- | :---------------------------------------------------- |
-| apply            | `(item: Trigger | "all") => void`                | apply staged changes                                  |
+| apply            | `(item: Trigger[] | "all") => void`              | apply staged changes                                  |
 | onApply          | `(query: Object, hash: string) => void`          | register a callback to call after apply               |
-| reset            | `() => void`                                     | discard all staged (un-applied) changes               |
+| reset            | `(item: Trigger[] | "all") => void`              | discard staged (un-applied) changes                   |
 | parseJson        | `(data: any) => void`                            | parse json response                                   |
 | parseHash        | `(data: string) => void`                         | parse hash                                            |
 | query            | `ComputedRef<Object>`                            | list of all request and response data                 |
@@ -134,17 +136,12 @@ All options are optional and lister use default value if option not passed or in
 | to               | `ComputedRef<number>`                            | response to records                                   |
 | pages            | `ComputedRef<number>`                            | total pages count                                     |
 | page             | `Ref<number>`                                    | page                                                  |
-| resetPage        | `() => void`                                     | discard staged (un-applied) page                      |
 | limit            | `Ref<number>`                                    | limit                                                 |
 | limits           | `Ref<number[]>`                                  | valid limits list                                     |
-| resetLimit       | `() => void`                                     | discard staged (un-applied) limit                     |
 | sort             | `Ref<string>`                                    | sort                                                  |
 | sorts            | `Ref<string[]>`                                  | valid sorts list                                      |
-| resetSort        | `() => void`                                     | discard staged (un-applied) sort                      |
 | order            | `Ref<"asc"|"desc">`                              | order                                                 |
-| resetOrder       | `() => void`                                     | discard staged (un-applied) order                     |
 | search           | `Ref<string>`                                    | search                                                |
-| resetSearch      | `() => void`                                     | discard staged (un-applied) search                    |
 | remove           | `(k: string) => void`                            | remove filter                                         |
 | toggle           | `(k: string, v: any) => void`                    | set filter or remove filter if false value passed     |
 | toggleArray      | `(k: string, v: any) => void`                    | toggle array filter item                              |
@@ -152,4 +149,3 @@ All options are optional and lister use default value if option not passed or in
 | value            | `<T = any>(k: string) => ComputedRef<T>`         | create a `ComputedRef<T>` for filter                  |
 | exists           | `(k: string, v: any) => ComputedRef<...>`        | create a `ComputedRef<boolean>` for array filter item |
 | clearFilters     | `() => void`                                     | remove all filters                                    |
-| resetFilters     | `() => void`                                     | discard staged (un-applied) filters                   |
