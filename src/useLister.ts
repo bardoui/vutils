@@ -108,7 +108,7 @@ export function useLister(opt: ListerOption) {
             _.autoApply("filters", _.clone(_v.value));
         };
         const toggle = (k: string, v: any) => {
-            v ? (_v.value[k] = v) : remove(k);
+            v !== undefined ? (_v.value[k] = v) : remove(k);
             _.autoApply("filters", _.clone(_v.value));
         };
         const toggleArray = (k: string, v: any) => {
@@ -198,7 +198,7 @@ export function useLister(opt: ListerOption) {
             }
             if (item.includes("filters")) {
                 filters.value = _.isObject(_.query("filters"))
-                    ? _.clone(_.query("search"))
+                    ? _.clone(_.query("filters"))
                     : _.clone(Opt.filters);
             }
             locked = false;

@@ -143,7 +143,7 @@ All options are optional and lister use default value if option not passed or in
 | order            | `Ref<"asc"|"desc">`                              | order                                                 |
 | search           | `Ref<string>`                                    | search                                                |
 | remove           | `(k: string) => void`                            | remove filter                                         |
-| toggle           | `(k: string, v: any) => void`                    | set filter or remove filter if false value passed     |
+| toggle           | `(k: string, v: any) => void`                    | set filter or remove filter if `undefined` value      |
 | toggleArray      | `(k: string, v: any) => void`                    | toggle array filter item                              |
 | filter           | `<T = any>(k: string) => WritableComputedRef<T>` | get a `Ref<T>` for filter                             |
 | value            | `<T = any>(k: string) => ComputedRef<T>`         | create a `ComputedRef<T>` for filter                  |
