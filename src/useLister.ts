@@ -11,14 +11,19 @@ export function useLister(opt: ListerOption) {
     const _ = {
         encode: (str: string) => window.btoa(unescape(encodeURIComponent(str))),
         decode: (str: string) => decodeURIComponent(escape(window.atob(str))),
-        isObject: (v: any) => v && typeof v == "object",
-        isVal: (v: any) => v != null && v != undefined,
+        isObject: (v: any) => v && typeof v === "object",
+        isVal: (v: any) => v != null && v !== undefined,
         clone: (v: any) => JSON.parse(JSON.stringify(v)),
         arrayOf: (v: any) => (Array.isArray(v) ? v : []),
         numberOf: (v: any) => (Number.isInteger(v) ? v : 0),
         query: (k: string) => query.value[k],
         autoApply: (k: Trigger, v: unknown) =>
-            !locked && Opt.isAuto(k) && (query.value[k] = v)
+            !locked && Opt.isAuto(k) && (query.value[k] = v),
+        withoutData: (v: any) => {
+            const obj = v && typeof v === "object" ? v : {};
+            const { data, ...queries } = v;
+            return queries;
+        }
     };
 
     // Page
@@ -146,8 +151,15 @@ export function useLister(opt: ListerOption) {
         let cb: callback;
         watch(
             query,
-            q => {
-                cb && cb(q, _.encode(JSON.stringify(q)));
+            (q, oQ) => {
+                const raw = _.withoutData(q);
+                const oRaw = _.withoutData(oQ);
+                if (
+                    _.encode(JSON.stringify(raw)) !==
+                    _.encode(JSON.stringify(oRaw))
+                ) {
+                    cb && cb(raw, _.encode(JSON.stringify(raw)));
+                }
             },
             { deep: true }
         );
@@ -232,8 +244,10 @@ export function useLister(opt: ListerOption) {
             }
         };
         const coms = {
-            query: computed(() => query.value),
-            hash: computed(() => _.encode(JSON.stringify(query.value))),
+            query: computed(() => _.withoutData(query.value)),
+            hash: computed(() =>
+                _.encode(JSON.stringify(_.withoutData(query.value)))
+            ),
             records: computed(() => _.arrayOf(_.query("data"))),
             isEmpty: computed(() => !_.arrayOf(_.query("data")).length),
             total: computed(() => _.numberOf(_.query("total"))),
