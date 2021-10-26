@@ -22,19 +22,18 @@
                 Clear filters
             </button>
         </div>
-        <pre>{{ result }}</pre>
-        <p>{{ hash }}</p>
         <p>Username: {{ username }}</p>
         <p>Groups: {{ groups }}</p>
         <p>Contains admin users: {{ hasAdmin }}</p>
+        <pre>{{ response }}</pre>
+        <pre>{{ params }}</pre>
+        <pre>{{ hash }}</pre>
     </section>
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
 import { useLister } from "@/useLister";
 
-const result = ref("{}");
 const {
     page,
     limit,
@@ -45,14 +44,16 @@ const {
     parseHash,
     parseJson,
     filter,
-    value,
+    valueOf,
     exists,
     onApply,
-    clearFilters
+    clearFilters,
+    response,
+    params
 } = useLister({ triggers: "all" });
 
 const username = filter<string>("name");
-const groups = value<string[]>("groups");
+const groups = valueOf<string[]>("groups");
 const hasAdmin = exists("groups", "admin");
 function parseFromHash() {
     parseHash(
@@ -61,13 +62,12 @@ function parseFromHash() {
 }
 function parseFromJson() {
     parseJson({
+        page: 100,
         data: [{ _id: 1 }]
     });
 }
-onApply((q, h) => {
-    result.value = JSON.stringify(q, null, 4);
-    parseFromJson();
-    console.log(q);
-    // console.log(h);
+onApply((params, hash) => {
+    console.log(params);
+    console.log(hash);
 });
 </script>

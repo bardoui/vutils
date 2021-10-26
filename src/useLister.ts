@@ -3,7 +3,7 @@ import { ref, computed, watch } from "vue";
  * manage list filters
  */
 export function useLister(opt: ListerOption) {
-    const query = ref<Record<string, unknown>>({});
+    const response = ref<Record<string, unknown>>({});
     let locked = false; // lock auto apply
     let respHash = ""; // keep response hash for prevent onApply after parsing response
     const Opt = parseOptions(opt); // default options
@@ -13,18 +13,14 @@ export function useLister(opt: ListerOption) {
         encode: (str: string) => window.btoa(unescape(encodeURIComponent(str))),
         decode: (str: string) => decodeURIComponent(escape(window.atob(str))),
         isObject: (v: any) => v && typeof v === "object",
+        objectOf: (v: any) => (v && typeof v === "object" ? v : {}),
         isVal: (v: any) => v != null && v !== undefined,
         clone: (v: any) => JSON.parse(JSON.stringify(v)),
         arrayOf: (v: any) => (Array.isArray(v) ? v : []),
         numberOf: (v: any) => (Number.isInteger(v) ? v : 0),
-        query: (k: string) => query.value[k],
+        resp: (k: string) => response.value[k],
         autoApply: (k: Trigger, v: unknown) =>
-            !locked && Opt.isAuto(k) && (query.value[k] = v),
-        withoutData: (v: any) => {
-            const obj = v && typeof v === "object" ? v : {};
-            const { data, ...queries } = v;
-            return queries;
-        }
+            !locked && Opt.isAuto(k) && (response.value[k] = v)
     };
 
     // Page
@@ -33,7 +29,7 @@ export function useLister(opt: ListerOption) {
         const page = computed({
             get: () => _v.value,
             set: (v: number) => {
-                v && v > 0 && (_v.value = v);
+                _.numberOf(v) > 0 && (_v.value = v);
                 _.autoApply("page", _v.value);
             }
         });
@@ -48,8 +44,7 @@ export function useLister(opt: ListerOption) {
             get: () => _v.value,
             set: (v: number) => {
                 const ls = limits.value || [];
-                v &&
-                    v > 0 &&
+                _.numberOf(v) > 0 &&
                     (ls.length == 0 || ls.includes(v)) &&
                     (_v.value = v);
                 _.autoApply("limit", _v.value);
@@ -105,7 +100,7 @@ export function useLister(opt: ListerOption) {
         const filters = computed({
             get: () => _v.value,
             set: v => {
-                _v.value = v;
+                _v.value = _.objectOf(v);
                 _.autoApply("filters", _.clone(_v.value));
             }
         });
@@ -131,7 +126,7 @@ export function useLister(opt: ListerOption) {
                 get: () => _v.value[k],
                 set: (v: T) => toggle(k, v)
             });
-        const value = <T = any>(k: string) => computed<T>(() => _v.value[k]);
+        const valueOf = <T = any>(k: string) => computed<T>(() => _v.value[k]);
         const exists = (k: string, v: any) =>
             computed(() => _.arrayOf(_v.value[k]).includes(v));
         const clear = () => (filters.value = {});
@@ -141,40 +136,43 @@ export function useLister(opt: ListerOption) {
             toggle,
             toggleArray,
             filter,
-            value,
+            valueOf,
             exists,
             clearFilters: clear
         };
     })();
 
     const lister = (() => {
-        const _resolve = (raw: any) => {
-            if (_.isObject(raw)) {
-                query.value = raw;
-                page.page.value = raw.page;
-                limit.limit.value = raw.limit;
-                sort.sort.value = raw.sort;
-                order.order.value = raw.order;
-                search.search.value = raw.search;
-                _.isObject(raw.filters) &&
-                    (filters.value = _.clone(raw.filters));
-                apply();
-            }
+        // Helpers
+        const _params = (v: any) => {
+            const { page, limit, sort, order, search, filters } = _.objectOf(v);
+            return { page, limit, sort, order, search, filters };
         };
+        const _resolve = (raw: any) => {
+            const obj = _.objectOf(raw);
+            response.value = obj;
+            page.page.value = obj.page;
+            limit.limit.value = obj.limit;
+            sort.sort.value = obj.sort;
+            order.order.value = obj.order;
+            search.search.value = obj.search;
+            _.isObject(obj.filters) && (filters.value = _.clone(obj.filters));
+        };
+        // Methods
         const apply = (item: Trigger[] | "all" = "all") => {
             if (item === "all") {
                 item = ["page", "limit", "sort", "order", "search", "filters"];
             }
-            item.includes("page") && (query.value["page"] = page.page.value);
+            item.includes("page") && (response.value["page"] = page.page.value);
             item.includes("limit") &&
-                (query.value["limit"] = limit.limit.value);
-            item.includes("sort") && (query.value["sort"] = sort.sort.value);
+                (response.value["limit"] = limit.limit.value);
+            item.includes("sort") && (response.value["sort"] = sort.sort.value);
             item.includes("order") &&
-                (query.value["order"] = order.order.value);
+                (response.value["order"] = order.order.value);
             item.includes("search") &&
-                (query.value["search"] = search.search.value);
+                (response.value["search"] = search.search.value);
             item.includes("filters") &&
-                (query.value["filters"] = _.clone(filters.value));
+                (response.value["filters"] = _.clone(filters.value));
         };
         const reset = (item: Trigger[] | "all" = "all") => {
             if (item === "all") {
@@ -182,83 +180,95 @@ export function useLister(opt: ListerOption) {
             }
             locked = true;
             if (item.includes("page")) {
-                page.page.value = _.numberOf(_.query("page")) || Opt.page;
+                page.page.value = _.numberOf(_.resp("page")) || Opt.page;
             }
             if (item.includes("limit")) {
-                limit.limit.value = _.numberOf(_.query("limit")) || Opt.limit;
+                limit.limit.value = _.numberOf(_.resp("limit")) || Opt.limit;
             }
             if (item.includes("sort")) {
                 sort.sort.value =
-                    (_.isVal(_.query("sort")) ? _.query("sort") + "" : "") ||
+                    (_.isVal(_.resp("sort")) ? _.resp("sort") + "" : "") ||
                     Opt.sort;
             }
             if (item.includes("order")) {
                 order.order.value = ["asc", "desc"].includes(
-                    `${_.query("order")}`
+                    `${_.resp("order")}`
                 )
-                    ? (`${_.query("order")}` as OrderType)
+                    ? (`${_.resp("order")}` as OrderType)
                     : Opt.order;
             }
             if (item.includes("search")) {
                 search.search.value =
-                    (_.isVal(_.query("search"))
-                        ? `${_.query("search")}`
-                        : "") || Opt.search;
+                    (_.isVal(_.resp("search")) ? `${_.resp("search")}` : "") ||
+                    Opt.search;
             }
             if (item.includes("filters")) {
-                filters.value = _.isObject(_.query("filters"))
-                    ? _.clone(_.query("filters"))
+                filters.value = _.isObject(_.resp("filters"))
+                    ? _.clone(_.resp("filters"))
                     : _.clone(Opt.filters);
             }
             locked = false;
         };
         const parseJson = (raw: any) => {
             locked = true;
-            try {
-                if (_.isObject(raw)) {
-                    respHash = _.encode(JSON.stringify(_.withoutData(raw)));
-                    _resolve(raw);
-                }
-            } catch {
-                //
-            }
+            const obj = _.objectOf(raw);
+            respHash = _.encode(
+                JSON.stringify(
+                    _params(
+                        Object.assign(
+                            {},
+                            _.clone(_.objectOf(response.value)),
+                            obj
+                        )
+                    )
+                )
+            );
+            _resolve(obj);
+            apply();
             locked = false;
         };
         const parseHash = (hashed: string) => {
             try {
-                const json = _.decode(hashed);
-                const raw = JSON.parse(json);
-                _resolve(raw);
+                _resolve(JSON.parse(_.decode(hashed)));
+                apply();
             } catch {
                 //
             }
         };
-        const coms = {
-            query: computed(() => _.withoutData(query.value)),
-            hash: computed(() =>
-                _.encode(JSON.stringify(_.withoutData(query.value)))
-            ),
-            records: computed(() => _.arrayOf(_.query("data"))),
-            isEmpty: computed(() => !_.arrayOf(_.query("data")).length),
-            total: computed(() => _.numberOf(_.query("total"))),
-            from: computed(() => _.numberOf(_.query("from"))),
-            to: computed(() => _.numberOf(_.query("to"))),
-            pages: computed(() => _.numberOf(_.query("pages")))
-        };
+        // Computed
+        const params = computed(() => _params(response.value));
+        const resp = computed(() => response.value);
+        const hash = computed(() => _.encode(JSON.stringify(params.value)));
+        const records = computed(() => _.arrayOf(_.resp("data")));
+        const isEmpty = computed(() => !_.arrayOf(_.resp("data")).length);
+        const total = computed(() => _.numberOf(_.resp("total")));
+        const from = computed(() => _.numberOf(_.resp("from")));
+        const to = computed(() => _.numberOf(_.resp("to")));
+        const pages = computed(() => _.numberOf(_.resp("pages")));
         // onApply callback
-        type callback = (q: Record<string, unknown>, hash: string) => void;
+        type callback = (params: Record<string, unknown>, hash: string) => void;
         let cb: callback;
         const onApply = (callback: callback) => (cb = callback);
         watch(
-            coms.hash,
-            (n, o) => {
-                if (n !== o && n != respHash) {
-                    cb && cb(coms.query.value, n);
-                }
-            },
-            { deep: true }
+            hash,
+            (n, o) => cb && n !== o && n !== respHash && cb(params.value, n)
         );
-        return { reset, apply, onApply, parseJson, parseHash, ...coms };
+        return {
+            reset,
+            apply,
+            onApply,
+            parseJson,
+            parseHash,
+            params,
+            response: resp,
+            hash,
+            records,
+            isEmpty,
+            total,
+            from,
+            to,
+            pages
+        };
     })();
 
     return {
