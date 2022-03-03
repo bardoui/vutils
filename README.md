@@ -143,6 +143,7 @@ All options are optional and lister use default value if option not passed or in
 | sorts            | `Ref<string[]>`                                  | valid sorts list                                            |
 | order            | `Ref<"asc"|"desc">`                              | order                                                       |
 | search           | `Ref<string>`                                    | search                                                      |
+| clearSearch      | `() => void`                                     | clear search value and apply                                |
 | remove           | `(k: string) => void`                            | remove filter                                               |
 | toggle           | `(k: string, v: any) => void`                    | set filter or remove filter if `undefined` value            |
 | toggleArray      | `(k: string, v: any) => void`                    | toggle array filter item                                    |

@@ -7,7 +7,10 @@
             <button @click="apply()">Apply</button>
             <button @click="page = page + 1">Add Page</button>
             <button @click="limit = limit + 1">Add Limit</button>
+            <button @click="sort = 'name'">Sort Name</button>
+            <button @click="sort = 'family'">Sort Family</button>
             <button @click="search = 'search me'">Set Search</button>
+            <button @click="clearSearch">Clear Search</button>
             <button @click="username = 'John Doe'">
                 Set User Name
             </button>
@@ -36,11 +39,13 @@ import { useLister } from "@/useLister";
 
 const {
     page,
+    sort,
     limit,
     apply,
     toggleArray,
     hash,
     search,
+    clearSearch,
     parseHash,
     parseJson,
     filter,

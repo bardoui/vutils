@@ -61,7 +61,15 @@ export function useLister(opt: ListerOption) {
             get: () => _v.value,
             set: (v: string) => {
                 const ls = sorts.value || [];
-                v && (ls.length == 0 || ls.includes(v)) && (_v.value = v);
+                if (v && (ls.length == 0 || ls.includes(v))) {
+                    if (_v.value == v) {
+                        order.order.value =
+                            order.order.value == "asc" ? "desc" : "asc";
+                    } else {
+                        _v.value = v;
+                        order.order.value = "asc";
+                    }
+                }
                 _.autoApply("sort", _v.value);
             }
         });
@@ -91,7 +99,12 @@ export function useLister(opt: ListerOption) {
                 _.autoApply("search", _v.value);
             }
         });
-        return { search };
+
+        function clearSearch() {
+            _v.value = "";
+            lister.apply(["search"]);
+        }
+        return { search, clearSearch };
     })();
 
     // Filter
