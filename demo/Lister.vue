@@ -15,10 +15,10 @@
                 Set User Name
             </button>
             <button @click="username = null">Clear User Name</button>
-            <button @click="toggleArray('groups', 'admin')">
+            <button @click="toggleFilterArr('groups', 'admin')">
                 Admin users
             </button>
-            <button @click="toggleArray('groups', 'operator')">
+            <button @click="toggleFilterArr('groups', 'operator')">
                 Operator users
             </button>
             <button @click="clearFilters">
@@ -40,26 +40,27 @@ import { useLister } from "@/useLister";
 const {
     page,
     sort,
+    order,
     limit,
     apply,
-    toggleArray,
+    toggleFilterArr,
     hash,
     search,
     clearSearch,
     parseHash,
     parseJson,
     filter,
-    valueOf,
-    exists,
+    filterValue,
+    filterExists,
     onApply,
     clearFilters,
     response,
     params
-} = useLister({ triggers: "all" });
+} = useLister({ triggers: "all", stores: ["limit", "sort", "order"] }, "hi");
 
 const username = filter<string>("name");
-const groups = valueOf<string[]>("groups");
-const hasAdmin = exists("groups", "admin");
+const groups = filterValue<string[]>("groups");
+const hasAdmin = filterExists("groups", "admin");
 function parseFromHash() {
     parseHash(
         "eyJwYWdlIjoxLCJsaW1pdCI6MjUsInNvcnQiOiJfaWQiLCJvcmRlciI6ImFzYyIsInNlYXJjaCI6IiIsImZpbHRlcnMiOnt9fQ=="

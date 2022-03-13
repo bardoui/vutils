@@ -72,18 +72,20 @@ addShortcut({
 
 ### Lister
 
-Help to parse and generate list related requests (paginate, filters, etc.).
+Help to parse and generate list related requests (paginate, filters, etc).
+
+**Note:** you can pass unique key to store parameters (limit, sort, order) in localStorage.
 
 ```ts
 import {onMounted} from "vue;
 import { useLister } from "@bardoui/vutils";
-const { toggleArray, onApply, filter, valueOf, exists, parseHash } = useLister(options);
+const { toggleFilterArr, onApply, filter, filterValue, filterExists, parseHash } = useLister(options, "admin-users");
 const username = filter<string>("username");
-const groups = valueOf<string[]>("groups");
-const containsAdminGroup = exists("groups", "admin");
+const groups = filterValue<string[]>("groups");
+const containsAdminGroup = filterExists("groups", "admin");
 
 function toggleGroup(group: string) {
-  toggleArray("groups", group);
+  toggleFilterArr("groups", group);
 }
 
 onApply((params, hash) => {
@@ -98,19 +100,22 @@ onMounted(() => parseHash(queryString)); // parse current data from url
 
 All options are optional and lister use default value if option not passed or invalid value passed.
 
-| Option      | Type                  | Default                              | Description                                                |
-| :---------- | :-------------------- | :----------------------------------- | :--------------------------------------------------------- |
-| triggers    | `Trigger[] | "all";`  | `["page", "limit", "sort", "order"]` | trigger auto apply on field change                         |
-| page        | `number`              | `1`                                  | init page                                                  |
-| limit       | `number`              | `25`                                 | init limit                                                 |
-| validLimits | `number[]`            | `[]`                                 | valid limit list. if empty array passed all value allowed! |
-| sort        | `string`              | `_id`                                | init sort                                                  |
-| validSorts  | `string[]`            | `[]`                                 | valid sort list. if empty array passed all value allowed!  |
-| order       | `"asc" | "desc"`      | `asc`                                | init order                                                 |
-| search      | `string`              | `""`                                 | init search phrase                                         |
-| filters     | `Record<string, any>` | `{}`                                 | init filters list                                          |
+| Option   | Type                  | Default                              | Description                                                |
+| :------- | :-------------------- | :----------------------------------- | :--------------------------------------------------------- |
+| triggers | `Trigger[] | "all"`   | `["page", "limit", "sort", "order"]` | auto apply on field change                                 |
+| stores   | `Store[]`             | `[]`                                 | stored items in local storage                              |
+| limits   | `number[]`            | `[]`                                 | valid limit list. if empty array passed all value allowed! |
+| sorts    | `string[]`            | `[]`                                 | valid sort list. if empty array passed all value allowed!  |
+| page     | `number`              | `1`                                  | init page                                                  |
+| limit    | `number`              | `25`                                 | init limit                                                 |
+| sort     | `string`              | `_id`                                | init sort                                                  |
+| order    | `"asc" | "desc"`      | `asc`                                | init order                                                 |
+| search   | `string`              | `""`                                 | init search phrase                                         |
+| filters  | `Record<string, any>` | `{}`                                 | init filters list                                          |
 
 **Trigger** can be `"page" | "limit" | "sort" | "order" | "search" | "filters"`.
+
+**Store** can be `"limit" | "sort" | "order"`.
 
 **Note:** if field not listed in trigger list, you must apply field changes manually!
 
@@ -120,34 +125,32 @@ All options are optional and lister use default value if option not passed or in
 
 #### Usage
 
-| Method/Attribute | Type                                             | Description                                                 |
-| :--------------- | :----------------------------------------------- | :---------------------------------------------------------- |
-| apply            | `(item: Trigger[] | "all") => void`              | apply staged changes                                        |
-| onApply          | `(params: Object, hash: string) => void`         | register a callback to call after request parameter changes |
-| reset            | `(item: Trigger[] | "all") => void`              | discard staged (un-applied) changes                         |
-| parseJson        | `(data: any) => void`                            | parse json response                                         |
-| parseHash        | `(data: string) => void`                         | parse parameters from Base64 encoded string                 |
-| params           | `ComputedRef<Object>`                            | list of parameters                                          |
-| response         | `ComputedRef<Object>`                            | list of all response data                                   |
-| hash             | `ComputedRef<string>`                            | Base64 encoded _params_ (can use as url query)              |
-| records          | `ComputedRef<Array>`                             | response records                                            |
-| isEmpty          | `ComputedRef<boolean>`                           | check if response has any _records_                         |
-| total            | `ComputedRef<number>`                            | response total records                                      |
-| from             | `ComputedRef<number>`                            | response from records                                       |
-| to               | `ComputedRef<number>`                            | response to records                                         |
-| pages            | `ComputedRef<number>`                            | total pages count                                           |
-| page             | `Ref<number>`                                    | page                                                        |
-| limit            | `Ref<number>`                                    | limit                                                       |
-| limits           | `Ref<number[]>`                                  | valid limits list                                           |
-| sort             | `Ref<string>`                                    | sort                                                        |
-| sorts            | `Ref<string[]>`                                  | valid sorts list                                            |
-| order            | `Ref<"asc"|"desc">`                              | order                                                       |
-| search           | `Ref<string>`                                    | search                                                      |
-| clearSearch      | `() => void`                                     | clear search value and apply                                |
-| remove           | `(k: string) => void`                            | remove filter                                               |
-| toggle           | `(k: string, v: any) => void`                    | set filter or remove filter if `undefined` value            |
-| toggleArray      | `(k: string, v: any) => void`                    | toggle array filter item                                    |
-| filter           | `<T = any>(k: string) => WritableComputedRef<T>` | get a `Ref<T>` for filter                                   |
-| valueOf          | `<T = any>(k: string) => ComputedRef<T>`         | create a `ComputedRef<T>` for filter                        |
-| exists           | `(k: string, v: any) => ComputedRef<...>`        | create a `ComputedRef<boolean>` for array filter item       |
-| clearFilters     | `() => void`                                     | remove all filters                                          |
+| Method/Attribute | Type                                                   | Description                                                                                              |
+| :--------------- | :----------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| page             | `ref<number>`                                          | reactive page field                                                                                      |
+| limit            | `ref<number>`                                          | reactive limit field                                                                                     |
+| sort             | `ref<string>`                                          | reactive sort field                                                                                      |
+| order            | `ref<OrderType>`                                       | reactive order field. accept 'asc' and 'desc' only. this field automatically change on sort value change |
+| search           | `ref<string>`                                          | reactive search field                                                                                    |
+| clearSearch      | `() => void`                                           | clear search field and fire `apply(['search'])`                                                          |
+| removeFilter     | `(key: string) => void`                                | remove filter                                                                                            |
+| toggleFilter     | `(key: string, v: unknown) => void`                    | toggle filter item (remove item if `undefined` passed)                                                   |
+| toggleFilterArr  | `(key: string, v: unknown) => void`                    | toggle array filter item                                                                                 |
+| filter           | `<T = unknown>(key: string) => WritableComputedRef<T>` | reactive ref for filter item                                                                             |
+| filterValue      | `<T = any>(k: string) => void`                         | get a computed ref for filter item                                                                       |
+| filterExists     | `(k: string, v: any) => ComputedRef<boolean>`          | get a computed ref for filter item exists                                                                |
+| clearFilters     | `() => void`                                           | clear filters and fire `apply(["filters"])`                                                              |
+| apply            | `(items?: Trigger[] | "all") => void`                  | apply staged changes                                                                                     |
+| reset            | `(items?: Trigger[] | "all") => void`                  | discard staged (un-applied) changes                                                                      |
+| parseJson        | `(raw: any) => void`                                   | parse json response                                                                                      |
+| parseHash        | `(hashed: string) => void`                             | parse parameters from Base64 encoded string                                                              |
+| onApply          | `(callback: Callback) => Callback`                     | register a callback to call after request parameter changes                                              |
+| params           | `ComputedRef<{page,limit,sort,order,search,filters}>`  | request parameters                                                                                       |
+| response         | `ComputedRef<Object>`                                  | all response data                                                                                        |
+| hash             | `ComputedRef<string>`                                  | Base64 encoded _params_ (can use as url query)                                                           |
+| records          | `ComputedRef<any[]>`                                   | response `data` field as array                                                                           |
+| isEmpty          | `ComputedRef<boolean>`                                 | check if response has no _records_                                                                       |
+| total            | `ComputedRef<number>`                                  | response `total` field                                                                                   |
+| from             | `ComputedRef<number>`                                  | response `from` field                                                                                    |
+| to               | `ComputedRef<number>`                                  | response `to` field                                                                                      |
+| pages            | `ComputedRef<number>`                                  | response `pages` field                                                                                   |

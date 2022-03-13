@@ -1,6 +1,6 @@
 {
     "name": "@bardoui/vutils",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "private": false,
     "description": "utility for vue 3",
     "license": "ISC",
@@ -35,7 +35,7 @@
     },
     "dependencies": {
         "core-js": "^3.6.5",
-        "vue": "^3.2.12"
+        "vue": "^3.2.31"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^18.0.0",
@@ -53,6 +53,6 @@
         "rollup-plugin-cleaner": "^1.0.0",
         "rollup-plugin-typescript2": "^0.30.0",
         "rollup-plugin-vue": "^6.0.0",
-        "typescript": "^4.2.4"
+        "typescript": "^4.6.2"
     }
 }
