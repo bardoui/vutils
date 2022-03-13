@@ -118,15 +118,15 @@ function useUtils(opt: ListerOption, key: string) {
 
     // check store
     if (key && key.trim() && localStorage) {
-        if (isStored("limit")) {
+        if (isStored("limit") && localStorage.getItem(`${key}::limit`)) {
             options.limit =
                 +(localStorage.getItem(`${key}::limit`) + "") || options.limit;
         }
-        if (isStored("sort")) {
+        if (isStored("sort") && localStorage.getItem(`${key}::sort`)) {
             options.sort =
                 localStorage.getItem(`${key}::sort`) + "" || options.sort;
         }
-        if (isStored("order")) {
+        if (isStored("order") && localStorage.getItem(`${key}::order`)) {
             options.order = (localStorage.getItem(`${key}::order`) + "" ||
                 options.order) as OrderType;
         }
@@ -172,13 +172,13 @@ export function useLister(opt: ListerOption, key: string): Lister {
     // helpers
     function _store() {
         if (key && key.trim() && localStorage) {
-            if (utils.isStored("limit")) {
+            if (utils.isStored("limit") && _limit.value) {
                 localStorage.setItem(`${key}::limit`, _limit.value.toString());
             }
-            if (utils.isStored("sort")) {
+            if (utils.isStored("sort") && _sort.value) {
                 localStorage.setItem(`${key}::sort`, _sort.value);
             }
-            if (utils.isStored("order")) {
+            if (utils.isStored("order") && _order.value) {
                 localStorage.setItem(`${key}::order`, _order.value);
             }
         }

@@ -56,7 +56,10 @@ const {
     clearFilters,
     response,
     params
-} = useLister({ triggers: "all", stores: ["limit", "sort", "order"] }, "hi");
+} = useLister(
+    { triggers: "all", stores: ["limit", "sort", "order"], sort: "com" },
+    "hi"
+);
 
 const username = filter<string>("name");
 const groups = filterValue<string[]>("groups");
