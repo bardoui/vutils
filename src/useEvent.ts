@@ -1,3 +1,5 @@
+import { ref } from "vue";
+
 export type onMethodSuccess<T = unknown> = (method: string, data: T) => void;
 export type onMethodError<T = unknown> = (method: string, err: T) => void;
 export type onSuccess<T = unknown> = (data: T) => void;
@@ -8,6 +10,7 @@ export class EventHub {
     private _fails: Record<string, any> = {};
     private _pass: any = null;
     private _fail: any = null;
+    public loading = ref(false);
 
     /**
      * handle event result if method handler not registered
