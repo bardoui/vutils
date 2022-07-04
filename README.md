@@ -154,3 +154,21 @@ All options are optional and lister use default value if option not passed or in
 | from             | `ComputedRef<number>`                                  | response `from` field                                                                                    |
 | to               | `ComputedRef<number>`                                  | response `to` field                                                                                      |
 | pages            | `ComputedRef<number>`                                  | response `pages` field                                                                                   |
+
+### Event Hub
+
+create event hub.
+
+```ts
+import { useEvent } from "@bardoui/vutils";
+
+const eHub = useEvent();
+eHub.onPass<number>("increment", v => console.log(`${v + 1}`));
+eHub.onPass("greet", v => console.log(`greeting ${v}`));
+hub.onSuccess((m, v) => console.log(`${v} received from ${m} method!`)); // called if no receiver func registered for event
+
+eHub.onFail("greet", v => console.error(`who are you`));
+hub.onError((m, err) =>
+  console.error(`${err} error received from ${m} method!`)
+); // called if no error handler registered for event
+```

@@ -1,11 +1,13 @@
 <template>
     <TimerAndShortcut />
     <Lister />
+    <EventHub />
 </template>
 
 <script lang="ts" setup>
 import TimerAndShortcut from "./TimerAndShortcut.vue";
 import Lister from "./Lister.vue";
+import EventHub from "./EventHub.vue";
 </script>
 
 <style>
