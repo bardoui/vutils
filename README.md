@@ -164,7 +164,7 @@ import { useEvent } from "@bardoui/vutils";
 
 const eHub = useEvent();
 eHub.onPass<number>("increment", v => console.log(`${v + 1}`));
-eHub.onPass("greet", v => console.log(`greeting ${v}`));
+eHub.onPass(["greet", "welcome"], v => console.log(`greeting ${v}`));
 hub.onSuccess((m, v) => console.log(`${v} received from ${m} method!`)); // called if no receiver func registered for event
 
 eHub.onFail("greet", v => console.error(`who are you`));

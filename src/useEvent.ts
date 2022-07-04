@@ -37,8 +37,17 @@ export class EventHub {
      * @param method method name
      * @param fn callback to handle event result
      */
-    public onPass<T = unknown>(method: string, fn: onSuccess<T>): void {
-        this._passes[method] = fn;
+    public onPass<T = unknown>(
+        method: string | string[],
+        fn: onSuccess<T>
+    ): void {
+        if (Array.isArray(method)) {
+            for (const m of method) {
+                this._passes[m] = fn;
+            }
+        } else {
+            this._passes[method] = fn;
+        }
     }
 
     /**
@@ -47,8 +56,17 @@ export class EventHub {
      * @param method method name
      * @param fn callback to handle event error
      */
-    public onFail<T = unknown>(method: string, fn: onError<T>): void {
-        this._fails[method] = fn;
+    public onFail<T = unknown>(
+        method: string | string[],
+        fn: onError<T>
+    ): void {
+        if (Array.isArray(method)) {
+            for (const m of method) {
+                this._fails[m] = fn;
+            }
+        } else {
+            this._fails[method] = fn;
+        }
     }
 
     /**
